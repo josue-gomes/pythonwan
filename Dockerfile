@@ -15,7 +15,7 @@ COPY handler.py /handler.py
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/opt/wan
 ENV WAN_ROOT=/opt/wan
-ENV HF_HOME=/runpod-volume/huggingface
+ENV HF_HOME=/models/hf
 
 WORKDIR /opt/wan
 ENTRYPOINT ["python", "-u", "/handler.py"]

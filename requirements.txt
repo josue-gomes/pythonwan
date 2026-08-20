@@ -11,3 +11,8 @@ easydict
 ftfy
 imageio-ffmpeg
 numpy>=1.23.5,<2
+einops
+sentencepiece
+safetensors
+pillow
+protobuf

@@ -30,6 +30,6 @@ jobs:
           push: true
           tags: |
             ghcr.io/josue-gomes/pythonwan:latest
-            ghcr.io/josue-gomes/pythonwan:v1
+            ghcr.io/josue-gomes/pythonwan:v2
           cache-from: type=gha
           cache-to: type=gha,mode=max

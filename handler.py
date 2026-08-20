@@ -11,7 +11,15 @@ WAN_ROOT = os.environ.get("WAN_ROOT", "/opt/wan")
 if WAN_ROOT not in sys.path:
     sys.path.insert(0, WAN_ROOT)
 
-VOLUME = "/runpod-volume/wan22" if os.path.isdir("/runpod-volume") else "/models/wan22"
+if os.path.isdir("/runpod-volume"):
+    os.environ.setdefault("HF_HOME", "/runpod-volume/huggingface")
+    VOLUME = "/runpod-volume/wan22"
+else:
+    os.environ.setdefault("HF_HOME", "/models/hf")
+    VOLUME = "/models/wan22"
+
+os.makedirs(os.environ["HF_HOME"], exist_ok=True)
+
 MODEL_REPO = os.environ.get("MODEL_REPO", "Wan-AI/Wan2.2-T2V-A14B")
 TASK = os.environ.get("WAN_TASK", "t2v-A14B")
 SIZE = os.environ.get("WAN_SIZE", "720*1280")
@@ -19,16 +27,30 @@ SIZE = os.environ.get("WAN_SIZE", "720*1280")
 _pipe = None
 
 
+def _ckpt_ready(dest: str) -> bool:
+    return all(
+        os.path.exists(os.path.join(dest, part))
+        for part in (
+            "Wan2.1_VAE.pth",
+            "models_t5_umt5-xxl-enc-bf16.pth",
+            "low_noise_model/config.json",
+            "high_noise_model/config.json",
+        )
+    )
+
+
 def _ckpt_dir() -> str:
     dest = os.path.join(VOLUME, Path(MODEL_REPO).name)
-    marker = os.path.join(dest, "config.json")
-    if os.path.isfile(marker):
+    if _ckpt_ready(dest):
         print(f"Using cached weights {dest}", flush=True)
         return dest
     os.makedirs(dest, exist_ok=True)
     token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN") or None
     print(f"Downloading {MODEL_REPO}", flush=True)
-    return snapshot_download(repo_id=MODEL_REPO, local_dir=dest, token=token)
+    snapshot_download(repo_id=MODEL_REPO, local_dir=dest, token=token)
+    if not _ckpt_ready(dest):
+        raise RuntimeError("weights incomplete")
+    return dest
 
 
 def _ensure_pipe():
@@ -108,4 +130,7 @@ def handler(job):
 
 
 print("Worker online", flush=True)
+import wan  # noqa: E402, F401
+
+print("Imports ready", flush=True)
 runpod.serverless.start({"handler": handler})
