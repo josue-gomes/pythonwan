@@ -1,0 +1,38 @@
+name: public-package
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/public-package.yml
+
+jobs:
+  public:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+    steps:
+      - name: Make pythonwan public
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          for url in \
+            "https://api.github.com/user/packages/container/pythonwan/visibility" \
+            "https://api.github.com/users/josue-gomes/packages/container/pythonwan/visibility"
+          do
+            code=$(curl -sS -o /tmp/out.json -w "%{http_code}" -X PUT \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "$url" \
+              -d '{"visibility":"public"}')
+            echo "$url -> $code"
+            cat /tmp/out.json
+            echo
+            if [ "$code" = "204" ] || [ "$code" = "200" ]; then
+              exit 0
+            fi
+          done
+          exit 1
